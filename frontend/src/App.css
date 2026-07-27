@@ -1,0 +1,18 @@
+* {
+  color: #ececec;
+  font-family: Roboto, 'Open Sans', 'Helvetica Neue', sans-serif;
+  box-sizing: border-box; /* Highly recommended: keeps widths precise */
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
+.app {
+  background-color: #212121;
+  display: flex;
+  width: 100vw;   /* Forces the main container to match full screen width */
+  height: 100vh;  /* Forces the main container to match full screen height */
+  overflow: hidden; /* Stops weird double scrolling bars from showing up */
+}

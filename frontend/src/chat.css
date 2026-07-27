@@ -1,0 +1,109 @@
+/* ==========================================================================
+   1. MAIN CHAT CONTAINER FIXES
+   ========================================================================== */
+.chats {
+  max-width: 700px;
+  margin: 0 auto;
+  height: calc(100vh - 180px); 
+  overflow-y: auto !important; /* Force vertical scrollbar when contents spill over */
+  padding: 1.5rem 1rem; 
+  
+  display: flex;
+  flex-direction: column;
+  align-items: stretch; 
+
+  /* --- SCROLLBAR CUSTOMIZATION --- */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+/* Scrollbar engine styling for WebKit Browsers */
+.chats::-webkit-scrollbar {
+  width: 6px;
+}
+.chats::-webkit-scrollbar-track {
+  background: transparent;
+}
+.chats::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+}
+.chats::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.4);
+}
+
+/* ==========================================================================
+   2. MESSAGE BUBBLE ALIGNMENT FIXES
+   ========================================================================== */
+
+/* Fixes the typo from your previous layout setup */
+.userDiv {
+   display: flex;
+   justify-content: flex-end; 
+   width: 100%;              
+   margin-bottom: 1.5rem; 
+}
+
+.userMessage {
+   background-color: #323232;
+   padding: 12px 20px;
+   border-radius: 14px;
+   max-width: 70%;            
+   word-break: break-word; 
+   color: #ffffff;            
+}
+
+.gptDiv {
+   display: flex;
+   flex-direction: column; /* Organizes nested elements downwards */
+   justify-content: flex-start; 
+   align-items: flex-start; /* Ensures content aligns cleanly to the left */
+   width: 100%;                 
+   margin-bottom: 1.5rem;
+   color: #ffffff;            
+   line-height: 1.6;          
+   font-size: 0.95rem;
+   text-align: left !important; /* CRITICAL: Forces all standard markdown texts to start on the left edge */
+}
+
+/* ==========================================================================
+   3. PURE CSS MARKDOWN OVERRIDES (Fixes scattered and centered code boxes)
+   ========================================================================== */
+
+/* Target the generated <pre> code containers directly inside your gpt divs */
+.gptDiv pre {
+   display: block !important;
+   width: 100% !important;
+   max-width: 100% !important;
+   box-sizing: border-box !important;
+   
+   background-color: #1e1e1e !important; /* Dark theme wrapper backgrounds */
+   padding: 1rem !important;
+   border-radius: 8px !important;
+   margin: 0.8rem 0 !important;
+   
+   /* Core Scroll fixes: forces code blocks to scroll horizontally if text is long */
+   overflow-x: auto !important; 
+   white-space: pre !important; 
+   word-break: normal !important;
+   word-wrap: normal !important;
+   
+   text-align: left !important; /* CRITICAL: Erases any high-level or inherited center alignment rules */
+}
+
+/* Targets the text code tags themselves */
+.gptDiv code {
+   font-family: 'Courier New', Courier, monospace !important;
+   font-size: 0.9rem !important;
+   white-space: pre !important;
+   text-align: left !important; /* CRITICAL: Keeps inner typography strictly pinned left */
+   display: block !important;    /* Changes code from inline to a structural block for perfect indentation rendering */
+}
+
+/* Ensures plain text paragraphs behave nicely */
+.gptDiv p {
+   width: 100%;
+   word-break: break-word;
+   margin-bottom: 0.5rem;
+   text-align: left !important; /* Confirms paragraphs don't accidentally center float */
+}
