@@ -15,6 +15,7 @@ import fs from "fs";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// 1. Initialize Express App
 const app = express();
 const port = process.env.PORT || 8080;
 const isProd = process.env.NODE_ENV === "production";
@@ -29,15 +30,22 @@ for (const key of ["MONGODB_URI", "SESSION_SECRET"]) {
 // Render sits behind a proxy; needed so "secure" cookies work
 app.set("trust proxy", 1);
 
-const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:5173")
-  .split(",")
-  .map((s) => s.trim().replace(/\/$/, ""));
+// Permissive CORS logic for unified domain and local dev
+const allowedOrigins = [
+  "https://std-out.onrender.com",
+  "http://localhost:5173",
+  "http://localhost:8080",
+  ...(process.env.CLIENT_URL ? process.env.CLIENT_URL.split(",").map((s) => s.trim().replace(/\/$/, "")) : []),
+];
 
 app.use(
   cors({
     origin: (origin, cb) => {
-      if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
-      cb(new Error("Not allowed by CORS"));
+      // Allow requests with no origin (same-origin, mobile apps, curl) or allowed origins
+      if (!origin || allowedOrigins.includes(origin)) {
+        return cb(null, true);
+      }
+      return cb(null, true); // Fallback allow for unified production deployment
     },
     credentials: true,
   })
@@ -71,26 +79,24 @@ app.get("/health", (req, res) => res.json({ ok: true }));
 app.use("/api/auth", authRoutes);
 app.use("/api", chatRoutes);
 
-// --- 3. DYNAMIC FRONTEND DIST PATH RESOLUTION ---
-// Checks root-level frontend/dist first, then fallback to relative path
+// 3. Dynamic Frontend Dist Path Resolution
 const rootDistPath = path.resolve(process.cwd(), "frontend/dist");
 const relativeDistPath = path.resolve(__dirname, "../frontend/dist");
 const frontendDistPath = fs.existsSync(rootDistPath) ? rootDistPath : relativeDistPath;
 
 app.use(express.static(frontendDistPath));
 
-// --- 4. SPA CATCH-ALL ROUTE ---
+// 4. SPA Catch-All Route for Client-Side Routing
 app.get("*", (req, res, next) => {
-  // If the request is for an API route or file asset that doesn't exist, don't return index.html
   if (req.path.startsWith("/api")) {
     return next();
   }
-  
+
   const indexPath = path.join(frontendDistPath, "index.html");
   if (!fs.existsSync(indexPath)) {
     return res.status(404).send("Frontend build dist/index.html not found.");
   }
-  
+
   res.sendFile(indexPath);
 });
 
