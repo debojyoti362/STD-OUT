@@ -10,11 +10,11 @@ import authRoutes from "./routes/auth.js";
 import chatRoutes from "./routes/chat.js";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// 1. Initialize Express App FIRST
 const app = express();
 const port = process.env.PORT || 8080;
 const isProd = process.env.NODE_ENV === "production";
@@ -71,19 +71,29 @@ app.get("/health", (req, res) => res.json({ ok: true }));
 app.use("/api/auth", authRoutes);
 app.use("/api", chatRoutes);
 
-// --- 3. SERVE FRONTEND STATIC FILES ---
-const frontendDistPath = path.resolve(__dirname, "../frontend/dist");
+// --- 3. DYNAMIC FRONTEND DIST PATH RESOLUTION ---
+// Checks root-level frontend/dist first, then fallback to relative path
+const rootDistPath = path.resolve(process.cwd(), "frontend/dist");
+const relativeDistPath = path.resolve(__dirname, "../frontend/dist");
+const frontendDistPath = fs.existsSync(rootDistPath) ? rootDistPath : relativeDistPath;
 
 app.use(express.static(frontendDistPath));
 
 // --- 4. SPA CATCH-ALL ROUTE ---
-app.get("*", (req, res) => {
-  res.sendFile(path.join(frontendDistPath, "index.html"), (err) => {
-    if (err) {
-      res.status(500).send(err);
-    }
-  });
+app.get("*", (req, res, next) => {
+  // If the request is for an API route or file asset that doesn't exist, don't return index.html
+  if (req.path.startsWith("/api")) {
+    return next();
+  }
+  
+  const indexPath = path.join(frontendDistPath, "index.html");
+  if (!fs.existsSync(indexPath)) {
+    return res.status(404).send("Frontend build dist/index.html not found.");
+  }
+  
+  res.sendFile(indexPath);
 });
+
 // 5. Connect Database and Start Server
 mongoose
   .connect(process.env.MONGODB_URI)
