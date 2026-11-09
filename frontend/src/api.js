@@ -1,5 +1,5 @@
 // One place for the backend URL + cookie handling.
-export const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:8080").replace(/\/$/, "");
+export const API_BASE_URL = "https://std-out.onrender.com";
 
 export async function api(path, options = {}) {
   const res = await fetch(`${API_URL}${path}`, {
