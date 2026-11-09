@@ -8,19 +8,13 @@ import passport from "passport";
 import User from "./models/user.js";
 import authRoutes from "./routes/auth.js";
 import chatRoutes from "./routes/chat.js";
-import path from 'path';
-import { fileURLToPath } from 'url';
+import path from "path";
+import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Serve Vite build output files from the frontend
-app.use(express.static(path.join(__dirname, '../frontend/dist')));
-
-// SPA Catch-all route: sends index.html for client-side React routing
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
-});
+// 1. Initialize Express App FIRST
 const app = express();
 const port = process.env.PORT || 8080;
 const isProd = process.env.NODE_ENV === "production";
@@ -48,6 +42,7 @@ app.use(
     credentials: true,
   })
 );
+
 app.use(express.json());
 
 app.use(
@@ -55,12 +50,12 @@ app.use(
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI }), // sessions survive restarts
+    store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI }),
     cookie: {
       maxAge: 7 * 24 * 60 * 60 * 1000,
       httpOnly: true,
-      secure: isProd,                    // HTTPS only in production
-      sameSite: isProd ? "none" : "lax", // "none" lets the separate frontend site send the cookie
+      secure: isProd,
+      sameSite: isProd ? "none" : "lax",
     },
   })
 );
@@ -71,11 +66,20 @@ passport.use(User.createStrategy());
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
-app.get("/", (req, res) => res.send("Server running"));
+// 2. API Routes
 app.get("/health", (req, res) => res.json({ ok: true }));
 app.use("/api/auth", authRoutes);
 app.use("/api", chatRoutes);
 
+// 3. Serve Frontend Static Build Output
+app.use(express.static(path.join(__dirname, "../frontend/dist")));
+
+// 4. SPA Catch-all Route for Client-side React Routing
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
+});
+
+// 5. Connect Database and Start Server
 mongoose
   .connect(process.env.MONGODB_URI)
   .then(() => {
