@@ -71,14 +71,19 @@ app.get("/health", (req, res) => res.json({ ok: true }));
 app.use("/api/auth", authRoutes);
 app.use("/api", chatRoutes);
 
-// 3. Serve Frontend Static Build Output
-app.use(express.static(path.join(__dirname, "../frontend/dist")));
+// --- 3. SERVE FRONTEND STATIC FILES ---
+const frontendDistPath = path.resolve(__dirname, "../frontend/dist");
 
-// 4. SPA Catch-all Route for Client-side React Routing
+app.use(express.static(frontendDistPath));
+
+// --- 4. SPA CATCH-ALL ROUTE ---
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
+  res.sendFile(path.join(frontendDistPath, "index.html"), (err) => {
+    if (err) {
+      res.status(500).send(err);
+    }
+  });
 });
-
 // 5. Connect Database and Start Server
 mongoose
   .connect(process.env.MONGODB_URI)
