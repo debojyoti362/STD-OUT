@@ -8,7 +8,19 @@ import passport from "passport";
 import User from "./models/user.js";
 import authRoutes from "./routes/auth.js";
 import chatRoutes from "./routes/chat.js";
+import path from 'path';
+import { fileURLToPath } from 'url';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Serve Vite build output files from the frontend
+app.use(express.static(path.join(__dirname, '../frontend/dist')));
+
+// SPA Catch-all route: sends index.html for client-side React routing
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
+});
 const app = express();
 const port = process.env.PORT || 8080;
 const isProd = process.env.NODE_ENV === "production";
