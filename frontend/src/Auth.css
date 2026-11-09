@@ -1,0 +1,178 @@
+/* Page Background Container */
+.authPage {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background-color: #0c0d10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Centered Clear Logo Area */
+.authLogoBackground {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  z-index: 1;
+}
+
+/* Clear, sharp image sizing */
+.clearLogoImg {
+  max-width: 650px;
+  width: 85vw;
+  height: auto;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  filter: none !important; /* Forces image to be completely clear */
+}
+
+/* Trigger Button */
+.openAuthBtn {
+  background-color: #6366f1;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 30px;
+  padding: 14px 32px;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.openAuthBtn:hover {
+  background-color: #4f46e5;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(99, 102, 241, 0.6);
+}
+
+/* Modal Overlay & Dropdown Card */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.authCard {
+  position: relative;
+  background: #18181b;
+  border: 1px solid #27272a;
+  border-radius: 16px;
+  padding: 32px;
+  width: 90%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
+  animation: slideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.closeModalBtn {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  background: transparent;
+  border: none;
+  color: #a1a1aa;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.closeModalBtn:hover {
+  color: #ffffff;
+}
+
+/* Form Styles */
+.authBrand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #6366f1;
+}
+
+.authCard h2 {
+  color: #ffffff;
+  font-size: 20px;
+  margin: 0 0 6px 0;
+}
+
+.authInput {
+  background-color: #27272a;
+  border: 1px solid #3f3f46;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 14px;
+  color: #ffffff;
+  outline: none;
+}
+
+.authInput:focus {
+  border-color: #6366f1;
+}
+
+.authSubmit {
+  background-color: #6366f1;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  margin-top: 6px;
+}
+
+.authSubmit:hover:not(:disabled) {
+  background-color: #4f46e5;
+}
+
+.authError {
+  background-color: rgba(239, 68, 68, 0.2);
+  border: 1px solid #ef4444;
+  color: #fca5a5;
+  font-size: 13px;
+  padding: 8px;
+  border-radius: 6px;
+}
+
+.authSwitch {
+  color: #a1a1aa;
+  font-size: 13px;
+  text-align: center;
+}
+
+.authLink {
+  color: #818cf8;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}

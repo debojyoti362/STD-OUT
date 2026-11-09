@@ -148,3 +148,17 @@ button span {
 .fa-trash:hover{
    color: red !important;
 }
+/* ---- user + logout footer ---- */
+.signUser {
+  margin: 0 0 6px;
+  font-size: 14px;
+  color: #ececec;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sign .logoutBtn {
+  margin: 6px 0 0;
+  padding: 10px 14px;
+  width: 100%;
+}

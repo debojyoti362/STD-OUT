@@ -4,54 +4,55 @@ import User from "../models/user.js";
 
 const router = express.Router();
 
-// 1. SIGNUP ROUTE
+const publicUser = (u) => ({ id: u._id, name: u.name, email: u.email });
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// SIGN UP
 router.post("/signup", async (req, res) => {
   try {
-    const { username, email, password } = req.body;
-    
-    const newUser = new User({ username, email });
-    
-    // User.register hashes password & saves to DB automatically
-    const registeredUser = await User.register(newUser, password);
+    const { name = "", email = "", password = "" } = req.body || {};
 
-    // Auto-login after successful registration
-    req.login(registeredUser, (err) => {
-      if (err) return res.status(500).json({ error: err.message });
-      
-      res.json({
-        message: "Signup successful!",
-        user: { id: registeredUser._id, username: registeredUser.username, email: registeredUser.email }
-      });
+    if (!EMAIL_RE.test(email)) return res.status(400).json({ error: "Enter a valid email address." });
+    if (password.length < 6) return res.status(400).json({ error: "Password must be at least 6 characters." });
+
+    const user = await User.register(new User({ email, name: name.trim() }), password);
+
+    req.login(user, (err) => {
+      if (err) return res.status(500).json({ error: "Account created, but login failed. Please log in." });
+      res.status(201).json({ message: "Signup successful", user: publicUser(user) });
     });
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    // e.g. UserExistsError
+    res.status(400).json({ error: err.message || "Signup failed." });
   }
 });
 
-// 2. LOGIN ROUTE
-router.post("/login", passport.authenticate("local"), (req, res) => {
-  res.json({
-    message: "Logged in successfully!",
-    user: { id: req.user._id, username: req.user.username, email: req.user.email }
-  });
+// LOG IN
+router.post("/login", (req, res, next) => {
+  passport.authenticate("local", (err, user) => {
+    if (err) return next(err);
+    if (!user) return res.status(401).json({ error: "Incorrect email or password." });
+    req.login(user, (loginErr) => {
+      if (loginErr) return next(loginErr);
+      res.json({ message: "Logged in", user: publicUser(user) });
+    });
+  })(req, res, next);
 });
 
-// 3. LOGOUT ROUTE
+// LOG OUT
 router.post("/logout", (req, res) => {
   req.logout((err) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ message: "Logged out successfully!" });
+    if (err) return res.status(500).json({ error: "Logout failed." });
+    req.session.destroy(() => {
+      res.clearCookie("connect.sid");
+      res.json({ message: "Logged out" });
+    });
   });
 });
 
-// 4. CHECK AUTH STATE (Used on page reload)
+// WHO AM I (called when the page loads)
 router.get("/me", (req, res) => {
-  if (req.isAuthenticated()) {
-    return res.json({
-      authenticated: true,
-      user: { id: req.user._id, username: req.user.username, email: req.user.email }
-    });
-  }
+  if (req.isAuthenticated()) return res.json({ authenticated: true, user: publicUser(req.user) });
   res.json({ authenticated: false, user: null });
 });
 

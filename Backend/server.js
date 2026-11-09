@@ -1,61 +1,76 @@
-import express from "express";
 import "dotenv/config";
+import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
 import session from "express-session";
+import MongoStore from "connect-mongo";
+import passport from "passport";
+import User from "./models/user.js";
+import authRoutes from "./routes/auth.js";
 import chatRoutes from "./routes/chat.js";
 
 const app = express();
-const port = 8080;
+const port = process.env.PORT || 8080;
+const isProd = process.env.NODE_ENV === "production";
 
-// 1. Enable CORS with credentials
+for (const key of ["MONGODB_URI", "SESSION_SECRET"]) {
+  if (!process.env[key]) {
+    console.error(`Missing environment variable: ${key}`);
+    process.exit(1);
+  }
+}
+
+// Render sits behind a proxy; needed so "secure" cookies work
+app.set("trust proxy", 1);
+
+const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:5173")
+  .split(",")
+  .map((s) => s.trim().replace(/\/$/, ""));
+
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: (origin, cb) => {
+      if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+      cb(new Error("Not allowed by CORS"));
+    },
     credentials: true,
   })
 );
-
-// 2. Parse incoming JSON
 app.use(express.json());
 
-// 3. Configure & mount Session BEFORE routes
 app.use(
   session({
-    secret: "debojyoti9614",
+    secret: process.env.SESSION_SECRET,
     resave: false,
-    saveUninitialized: true,
+    saveUninitialized: false,
+    store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI }), // sessions survive restarts
     cookie: {
       maxAge: 7 * 24 * 60 * 60 * 1000,
       httpOnly: true,
-      sameSite: "lax",
+      secure: isProd,                    // HTTPS only in production
+      sameSite: isProd ? "none" : "lax", // "none" lets the separate frontend site send the cookie
     },
   })
 );
 
-// 4. Test route to verify cookie creation
-app.get("/api/test-session", (req, res) => {
-  req.session.views = (req.session.views || 0) + 1;
-  res.json({ message: "Session set!", views: req.session.views });
-});
+app.use(passport.initialize());
+app.use(passport.session());
+passport.use(User.createStrategy());
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
 
-// 5. Mount API routes
+app.get("/", (req, res) => res.send("Server running"));
+app.get("/health", (req, res) => res.json({ ok: true }));
+app.use("/api/auth", authRoutes);
 app.use("/api", chatRoutes);
 
-app.get("/", (req, res) => {
-  res.send("Server running");
-});
-
-const connectDB = async () => {
-  try {
-    await mongoose.connect(process.env.MONGODB_URI);
+mongoose
+  .connect(process.env.MONGODB_URI)
+  .then(() => {
     console.log("Successfully connected with database");
-  } catch (err) {
-    console.log("Failed to connect!", err);
-  }
-};
-
-app.listen(port, () => {
-  console.log(`Server listening on port ${port}...`);
-  connectDB();
-});
+    app.listen(port, () => console.log(`Server listening on port ${port}...`));
+  })
+  .catch((err) => {
+    console.error("Failed to connect to database!", err);
+    process.exit(1);
+  });

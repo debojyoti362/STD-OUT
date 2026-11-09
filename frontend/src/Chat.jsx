@@ -1,28 +1,18 @@
 import "./chat.css";
-import { useContext, useState, useEffect } from "react";
+import { useContext, useEffect, useRef } from "react";
 import { MyContext } from "./MyContext";
 import ReactMarkdown from "react-markdown";
 import "highlight.js/styles/github-dark.css";
 import rehypeHighlight from "rehype-highlight";
 
-function chat() {
-  const { newChat, prevChats , reply , setreply } = useContext(MyContext);
-  const [latestReply, setLatestReply] = useState(null);
+function Chat() {
+  const { newChat, prevChats } = useContext(MyContext);
+  const bottomRef = useRef(null);
 
+  // scroll to the newest message
   useEffect(() => {
-    if(reply == null)
-    {
-       setLatestReply(null);
-       return;
-    }
-    // Your typing effect logic goes here
-    if (prevChats && prevChats.length > 0) {
-      const lastMessage = prevChats[prevChats.length - 1];
-      if (lastMessage.role === "assistant") {
-        // Run your typing effect or state updates here using lastMessage.content
-      }
-    }
-  }, [prevChats]); // Removed the non-existent 'reply' variable
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [prevChats]);
 
   return (
     <>
@@ -33,15 +23,14 @@ function chat() {
             {chat.role === "user" ? (
               <p className="userMessage">{chat.content}</p>
             ) : (
-              <ReactMarkdown rehypePlugins={[rehypeHighlight]}>
-                {chat.content}
-              </ReactMarkdown>
+              <ReactMarkdown rehypePlugins={[rehypeHighlight]}>{chat.content}</ReactMarkdown>
             )}
           </div>
         ))}
+        <div ref={bottomRef} />
       </div>
     </>
   );
 }
 
-export default chat;
+export default Chat;

@@ -1,101 +1,77 @@
-import express from "express"
-import Thread from "../models/threads.js"
+import express from "express";
+import Thread from "../models/thread.js";
 import getOpenAIAPIResponse from "../utils/openai.js";
+import requireAuth from "../middleware/requireAuth.js";
 
 const router = express.Router();
+router.use(requireAuth); // every route below needs a logged-in user
 
-
-router.post("/test", async(req,res)=>{
-  try{
-       const thread= new Thread({
-        threadId:"xyz",
-        title:"Testing new Thread"
-       });
-       const response = await thread.save();
-       res.send(response);
-  }
-  
-  catch(err)
-  {
-    console.log(err);
-    res.status(500).json({error:"Failed to save the data"});
-  }
-})
-
-// get all the threads 
+// all threads of the current user (newest first)
 router.get("/threads", async (req, res) => {
   try {
-    // Sorts by creation time using the default MongoDB ObjectID structure
-    const threads = await Thread.find({}).sort({ _id: -1 });
-    res.status(200).json(threads);
+    const threads = await Thread.find({ user: req.user._id })
+      .select("threadId title updatedAt")
+      .sort({ updatedAt: -1 });
+    res.json(threads);
   } catch (err) {
     console.log(err);
     res.status(500).json({ error: "Threads could not be loaded" });
   }
 });
 
-// get a particular thread message 
-router.get("/thread/:threadId",async(req,res)=>{
-  const {threadId} = req.params;
-  try{
-    const thread = await Thread.findOne({threadId})
-    if(!thread)
-    {
-       res.status(404).json({error:"The thread cant find"})
+// messages of one thread
+router.get("/thread/:threadId", async (req, res) => {
+  try {
+    const thread = await Thread.findOne({ threadId: req.params.threadId, user: req.user._id });
+    if (!thread) return res.status(404).json({ error: "Thread not found" });
+    res.json(thread.messages);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: "Thread could not be loaded" });
+  }
+});
+
+// delete a thread
+router.delete("/thread/:threadId", async (req, res) => {
+  try {
+    const thread = await Thread.findOneAndDelete({ threadId: req.params.threadId, user: req.user._id });
+    if (!thread) return res.status(404).json({ error: "Thread not found" });
+    res.json({ success: "Thread deleted successfully" });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: "Thread could not be deleted" });
+  }
+});
+
+// send a message, get the AI reply
+router.post("/chat", async (req, res) => {
+  const { threadId, message } = req.body || {};
+  if (!threadId || !message || !String(message).trim()) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  try {
+    let thread = await Thread.findOne({ threadId, user: req.user._id });
+    if (!thread) {
+      // threadId is globally unique, so refuse an id that belongs to someone else
+      if (await Thread.exists({ threadId })) return res.status(403).json({ error: "Invalid thread" });
+      thread = new Thread({ user: req.user._id, threadId, title: String(message).slice(0, 60), messages: [] });
     }
-    res.json(thread.messages)
+    thread.messages.push({ role: "user", content: message });
 
-  }catch(err){
-    console.log(err)
-    res.status(500).json({error:"The thread can be loaded"})
-  }
-})
-// delete a thread 
-router.delete("/thread/:threadId",async(req,res)=>{
-  const{threadId} = req.params;
-  try{
-    const thread = await Thread.findOneAndDelete({threadId})
-    if(!thread){
-      res.status(404).json({error:"Thread cant find"})
-    }
-    res.status(200).json({success:"Thread deleted succesfully"})
+    // send recent history so the AI remembers the conversation
+    const history = thread.messages.slice(-20).map((m) => ({ role: m.role, content: m.content }));
+    const reply = await getOpenAIAPIResponse(history);
 
-  }catch(err){
-    console.log(err)
-    res.status(500).json({error:"Thread cant be loaded"})
-  }
-})
+    thread.messages.push({ role: "assistant", content: reply });
+    thread.updatedAt = new Date();
+    await thread.save();
 
-//request response cycle post route
-router.post("/chat",async(req,res)=>{
-  const{threadId,message}= req.body
-  if(!threadId || !message)
-  {
-     res.status(400).json({error:"Missing required fields"})
+    res.json({ reply });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: err.message || "Something went wrong" });
   }
-  try{
-    let  thread = await Thread.findOne({threadId})
-    if(!thread)
-    {
-      thread= new Thread({
-        threadId,
-        title:message,
-        messages:[{role:"user",content:message}]
-      });
-    }else{
-      thread.messages.push({role:"user",content:message})
-    }
-    const apiResponse = await getOpenAIAPIResponse(message);
-    const assistantreply =  apiResponse?.choices?.[0]?.message?.content || "No response text generated.";
-      thread.messages.push({role:"assistant",content:assistantreply})
-      thread.updatedAt=new Date();
+});
 
-      await thread.save();
-      res.json({reply:assistantreply})
-  }
-  catch(err){
-    console.log(err)
-    res.status(500).json({error:""})
-  }
-})
 export default router;
