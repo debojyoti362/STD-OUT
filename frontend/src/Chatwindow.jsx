@@ -3,14 +3,27 @@ import Chat from "./Chat.jsx";
 import { MyContext } from "./MyContext.jsx";
 import { useAuth } from "./AuthContext.jsx";
 import { api } from "./api.js";
-import { useContext, useState } from "react";
+import { useContext, useState, useRef, useEffect } from "react";
 import { RingLoader } from "react-spinners";
 
 function Chatwindow() {
   const { prompt, setprompt, setreply, currThreadId, setPrevChats, setNewChat, setThreadsVersion } =
     useContext(MyContext);
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Close profile dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowProfile(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const getreply = async () => {
     if (loading || !prompt.trim()) return;
@@ -48,10 +61,36 @@ function Chatwindow() {
         <span>
           STD-out <i className="fa-solid fa-angle-down"></i>
         </span>
-        <div className="userIconDiv">
-          <span className="userIcon">
+
+        {/* User Profile Dropdown Container */}
+        <div className="userIconDiv" ref={dropdownRef} style={{ position: "relative" }}>
+          <span 
+            className="userIcon" 
+            onClick={() => setShowProfile((prev) => !prev)}
+            style={{ cursor: "pointer" }}
+            title="User Profile"
+          >
             <i className="fa-solid fa-user"></i>
           </span>
+
+          {/* Profile Card Popup */}
+          {showProfile && (
+            <div className="profileDropdown">
+              <div className="profileHeader">
+                <div className="profileAvatar">
+                  <i className="fa-solid fa-user"></i>
+                </div>
+                <div className="profileInfo">
+                  <p className="profileName">{user?.username || "Account Details"}</p>
+                  <p className="profileEmail">{user?.username || user?.email || "User"}</p>
+                </div>
+              </div>
+              <hr className="profileDivider" />
+              <button className="profileLogoutBtn" onClick={logout}>
+                <i className="fa-solid fa-right-from-bracket"></i> Log Out
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
